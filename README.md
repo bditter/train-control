@@ -6,7 +6,7 @@ Custom Home Assistant integration for controlling model trains through the JMRI 
 
 ## Version
 
-`1.0.0`
+`1.0.1`
 
 ## What it creates
 
@@ -21,6 +21,16 @@ JMRI must have the Web Server running. By default this is usually `http://<jmri-
 Copy `custom_components/jmri_trains` into your Home Assistant `custom_components` directory and restart Home Assistant.
 
 Then add the integration from **Settings > Devices & services > Add integration > Train Control**.
+
+## HACS
+
+Add this repository as a custom HACS integration repository:
+
+```text
+https://github.com/bditter/train-control
+```
+
+Use the latest GitHub release, then restart Home Assistant after HACS downloads it.
 
 ## Add a train
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Adds HACS metadata and issue tracker URL.
+- Publishes a GitHub release so HACS uses a semantic version instead of a commit hash.
+- Hides the default branch option in HACS to steer installs to releases.
+
 ## 1.0.0
 
 - Initial private release.
