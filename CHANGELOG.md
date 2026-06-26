@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Changes Configure number fields for DCC addresses, subaddresses, and function mappings to whole-number box inputs.
+
 ## 1.4.0
 
 - Adds heartbeat polling with `<s>` and configured locomotive `<t cab>` queries.

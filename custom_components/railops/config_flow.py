@@ -8,6 +8,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.helpers import selector
 
 from .client import DccExClient, DccExConnectionError
 from .const import (
@@ -271,9 +272,7 @@ class RailOpsOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Required(ATTR_TRAIN_ID): vol.In(self._train_names),
                     vol.Required(ATTR_FUNCTION_NAME): str,
-                    vol.Required(ATTR_FUNCTION_NUMBER): vol.All(
-                        vol.Coerce(int), vol.Range(min=0, max=28)
-                    ),
+                    vol.Required(ATTR_FUNCTION_NUMBER): _whole_number_selector(0, 28),
                 }
             ),
         )
@@ -353,8 +352,8 @@ def _train_schema(train: dict[str, Any] | None = None) -> vol.Schema:
     if ATTR_TRAIN_ID not in train:
         schema[vol.Required(ATTR_TRAIN_ID)] = str
     schema[vol.Optional(ATTR_NAME, default=train.get(ATTR_NAME, ""))] = str
-    schema[vol.Required(ATTR_ADDRESS, default=train.get(ATTR_ADDRESS, 3))] = vol.All(
-        vol.Coerce(int), vol.Range(min=1, max=10239)
+    schema[vol.Required(ATTR_ADDRESS, default=train.get(ATTR_ADDRESS, 3))] = (
+        _whole_number_selector(1, 10239)
     )
     return vol.Schema(schema)
 
@@ -364,7 +363,7 @@ def _normalize_train(data: dict[str, Any]) -> dict[str, Any]:
     train = {
         ATTR_TRAIN_ID: data[ATTR_TRAIN_ID],
         ATTR_NAME: data.get(ATTR_NAME) or data[ATTR_TRAIN_ID],
-        ATTR_ADDRESS: data[ATTR_ADDRESS],
+        ATTR_ADDRESS: int(data[ATTR_ADDRESS]),
     }
     if ATTR_FUNCTIONS in data:
         train[ATTR_FUNCTIONS] = data[ATTR_FUNCTIONS]
@@ -386,14 +385,14 @@ def _accessory_schema(accessory: dict[str, Any] | None = None) -> vol.Schema:
             ACCESSORY_MODE_FUNCTION: "Function decoder output",
         }
     )
-    schema[
-        vol.Required(ATTR_ADDRESS, default=accessory.get(ATTR_ADDRESS, 1))
-    ] = vol.All(vol.Coerce(int), vol.Range(min=1, max=10239))
+    schema[vol.Required(ATTR_ADDRESS, default=accessory.get(ATTR_ADDRESS, 1))] = (
+        _whole_number_selector(1, 10239)
+    )
     schema[
         vol.Optional(ATTR_SUBADDRESS, default=accessory.get(ATTR_SUBADDRESS, 0))
-    ] = vol.All(vol.Coerce(int), vol.Range(min=0, max=3))
-    schema[vol.Optional(ATTR_OUTPUT, default=accessory.get(ATTR_OUTPUT, 0))] = vol.All(
-        vol.Coerce(int), vol.Range(min=0, max=28)
+    ] = _whole_number_selector(0, 3)
+    schema[vol.Optional(ATTR_OUTPUT, default=accessory.get(ATTR_OUTPUT, 0))] = (
+        _whole_number_selector(0, 28)
     )
     schema[
         vol.Optional(ATTR_INVERTED, default=accessory.get(ATTR_INVERTED, False))
@@ -407,11 +406,23 @@ def _normalize_accessory(data: dict[str, Any]) -> dict[str, Any]:
         ATTR_ACCESSORY_ID: data[ATTR_ACCESSORY_ID],
         ATTR_NAME: data.get(ATTR_NAME) or data[ATTR_ACCESSORY_ID],
         ATTR_MODE: data[ATTR_MODE],
-        ATTR_ADDRESS: data[ATTR_ADDRESS],
-        ATTR_SUBADDRESS: data.get(ATTR_SUBADDRESS, 0),
-        ATTR_OUTPUT: data.get(ATTR_OUTPUT, 0),
+        ATTR_ADDRESS: int(data[ATTR_ADDRESS]),
+        ATTR_SUBADDRESS: int(data.get(ATTR_SUBADDRESS, 0)),
+        ATTR_OUTPUT: int(data.get(ATTR_OUTPUT, 0)),
         ATTR_INVERTED: data.get(ATTR_INVERTED, False),
     }
+
+
+def _whole_number_selector(min_value: int, max_value: int) -> selector.NumberSelector:
+    """Return a whole-number box selector."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=min_value,
+            max=max_value,
+            step=1,
+            mode=selector.NumberSelectorMode.BOX,
+        )
+    )
 
 
 def _normalize_function_name(name: str) -> str:
