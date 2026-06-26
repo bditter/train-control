@@ -9,11 +9,11 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .client import DccExClient, TrainConfig
 from .const import DATA_CLIENT, DOMAIN, OPT_TRAINS
+from .entity import RailOpsControllerEntity, RailOpsTrainEntity
 
 
 async def async_setup_entry(
@@ -31,7 +31,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class RailOpsControllerSensor(SensorEntity):
+class RailOpsControllerSensor(RailOpsControllerEntity, SensorEntity):
     """Controller entity representing the DCC-EX command station."""
 
     _attr_icon = "mdi:train"
@@ -41,19 +41,11 @@ class RailOpsControllerSensor(SensorEntity):
         """Initialize the controller sensor."""
         self._entry = entry
         self._client = client
+        RailOpsControllerEntity.__init__(self, entry, client)
         self._attr_unique_id = f"controller_{entry.entry_id}"
         self._attr_name = "Controller"
         self._attr_native_value = "connected" if client.connected else "disconnected"
         self._unsub: Callable[[], None] | None = None
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name=self._entry.title,
-            manufacturer="DCC-EX",
-        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -81,7 +73,7 @@ class RailOpsControllerSensor(SensorEntity):
         self.async_write_ha_state()
 
 
-class RailOpsTrainSensor(SensorEntity):
+class RailOpsTrainSensor(RailOpsTrainEntity, SensorEntity):
     """Train entity backed by a DCC-EX cab address."""
 
     _attr_icon = "mdi:train-car"
@@ -94,20 +86,12 @@ class RailOpsTrainSensor(SensorEntity):
         self._entry = entry
         self._client = client
         self._train = train
+        RailOpsTrainEntity.__init__(self, entry, client, train)
         self._state: dict[str, Any] = {}
         self._attr_unique_id = f"train_{entry.entry_id}_{train.train_id}"
         self._attr_name = train.name
         self._attr_native_value = "unknown"
         self._unsub: Callable[[], None] | None = None
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name=self._entry.title,
-            manufacturer="DCC-EX",
-        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

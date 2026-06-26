@@ -16,5 +16,63 @@
     "abort": {
       "already_configured": "This DCC-EX command station is already configured."
     }
+  },
+  "options": {
+    "menu": {
+      "init": {
+        "add_train": "Add locomotive",
+        "edit_train": "Edit locomotive",
+        "remove_train": "Remove locomotive",
+        "set_function_mapping": "Set function mapping",
+        "remove_function_mapping": "Remove function mapping"
+      }
+    },
+    "step": {
+      "add_train": {
+        "title": "Add locomotive",
+        "data": {
+          "train_id": "Locomotive ID",
+          "name": "Name",
+          "address": "DCC address"
+        }
+      },
+      "edit_train": {
+        "title": "Choose locomotive",
+        "data": {
+          "train_id": "Locomotive"
+        }
+      },
+      "edit_train_details": {
+        "title": "Edit locomotive",
+        "data": {
+          "name": "Name",
+          "address": "DCC address"
+        }
+      },
+      "remove_train": {
+        "title": "Remove locomotive",
+        "data": {
+          "train_id": "Locomotive"
+        }
+      },
+      "set_function_mapping": {
+        "title": "Set function mapping",
+        "data": {
+          "train_id": "Locomotive",
+          "function_name": "Friendly name",
+          "function_number": "Function number"
+        }
+      },
+      "remove_function_mapping": {
+        "title": "Remove function mapping",
+        "data": {
+          "train_id": "Locomotive",
+          "function_name": "Friendly name"
+        }
+      }
+    },
+    "error": {
+      "train_exists": "That locomotive ID already exists."
+    }
   }
 }

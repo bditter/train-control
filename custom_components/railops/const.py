@@ -10,7 +10,7 @@ CONF_HOST: Final = "host"
 CONF_PORT: Final = "port"
 DEFAULT_PORT: Final = 2560
 
-PLATFORMS: Final = ["sensor"]
+PLATFORMS: Final = ["button", "number", "select", "sensor", "switch"]
 
 DATA_CLIENT: Final = "client"
 DATA_UNSUB_LISTENERS: Final = "unsub_listeners"

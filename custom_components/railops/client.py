@@ -107,6 +107,8 @@ class DccExClient:
         self._connection_callbacks: set[ConnectionCallback] = set()
         self._known_speed: dict[int, int] = {}
         self._known_forward: dict[int, bool] = {}
+        self._known_functions: dict[int, dict[int, bool]] = {}
+        self._power_on: bool | None = None
         self.connected = False
 
     @property
@@ -177,7 +179,24 @@ class DccExClient:
 
     async def async_set_power(self, on: bool, track: str = "MAIN") -> None:
         """Set DCC-EX track power."""
+        self._power_on = on
         await self.async_send_raw(f"<{1 if on else 0} {track}>")
+
+    def get_power_state(self) -> bool | None:
+        """Return the last commanded power state."""
+        return self._power_on
+
+    def get_speed(self, address: int) -> int:
+        """Return the last known speed for an address."""
+        return self._known_speed.get(address, 0)
+
+    def get_forward(self, address: int) -> bool:
+        """Return the last known direction for an address."""
+        return self._known_forward.get(address, True)
+
+    def get_function_state(self, address: int, function_number: int) -> bool | None:
+        """Return the last known function state for an address."""
+        return self._known_functions.get(address, {}).get(function_number)
 
     async def async_set_speed(self, train: TrainConfig, speed: int) -> None:
         """Set throttle speed from 0 to 126."""
@@ -195,6 +214,7 @@ class DccExClient:
     ) -> None:
         """Set a DCC function output."""
         function_number = train.resolve_function(function)
+        self._known_functions.setdefault(train.address, {})[function_number] = enabled
         await self.async_send_raw(
             f"<F {train.address} {function_number} {1 if enabled else 0}>"
         )
@@ -291,6 +311,10 @@ class DccExClient:
         speed = speed_byte & 0x7F
         self._known_speed[address] = speed
         self._known_forward[address] = forward
+        self._known_functions[address] = {
+            function: bool(functions & (1 << function))
+            for function in range(29)
+        }
         data = {
             "address": address,
             "speed": speed,

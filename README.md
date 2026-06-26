@@ -6,12 +6,14 @@ Custom Home Assistant integration for controlling model trains directly through 
 
 ## Version
 
-`1.1.0`
+`1.2.0`
 
 ## What it creates
 
 - One controller sensor for the configured DCC-EX command station.
-- One train sensor per configured train.
+- Controller controls for track power and global emergency stop.
+- One train device per configured locomotive.
+- Train controls for speed, direction, stop, emergency stop, and mapped DCC functions.
 - Services to add, edit, remove, stop, emergency stop, power, and control trains.
 
 DCC-EX must be reachable over TCP. ESP8266 WiFi setups commonly expose the DCC-EX command station on port `2560`.
@@ -21,6 +23,8 @@ DCC-EX must be reachable over TCP. ESP8266 WiFi setups commonly expose the DCC-E
 Copy `custom_components/railops` into your Home Assistant `custom_components` directory and restart Home Assistant.
 
 Then add the integration from **Settings > Devices & services > Add integration > RailOps**.
+
+To add or edit locomotives, open the RailOps integration entry and choose **Configure**.
 
 ## HACS
 

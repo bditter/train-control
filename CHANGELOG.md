@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+- Adds visible Home Assistant controls for RailOps instead of service-only control.
+- Adds controller track power switch and global emergency-stop button.
+- Adds train speed number, direction select, stop button, emergency-stop button, and function switches.
+- Adds a Configure options flow for adding, editing, and removing locomotives.
+- Adds Configure options for editing friendly function mappings.
+- Publishes branding in both HACS repo-level and integration-level brand folders.
+
 ## 1.1.0
 
 - Renames the integration to RailOps.
