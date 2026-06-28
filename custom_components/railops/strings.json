@@ -43,7 +43,8 @@
           "rpm_min": "RPM idle notch",
           "rpm_max": "RPM max notch",
           "rpm_increase_function": "RPM increase function",
-          "rpm_decrease_function": "RPM decrease function"
+          "rpm_decrease_function": "RPM decrease function",
+          "rpm_step_delay": "RPM step delay"
         }
       },
       "edit_train": {
@@ -61,7 +62,8 @@
           "rpm_min": "RPM idle notch",
           "rpm_max": "RPM max notch",
           "rpm_increase_function": "RPM increase function",
-          "rpm_decrease_function": "RPM decrease function"
+          "rpm_decrease_function": "RPM decrease function",
+          "rpm_step_delay": "RPM step delay"
         }
       },
       "remove_train": {

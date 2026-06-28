@@ -34,6 +34,7 @@ from .const import (
     ATTR_RPM_INCREASE_FUNCTION,
     ATTR_RPM_MAX,
     ATTR_RPM_MIN,
+    ATTR_RPM_STEP_DELAY,
     ATTR_SPEED,
     ATTR_TRACK,
     ATTR_TRAIN_ID,
@@ -69,6 +70,9 @@ TRAIN_SCHEMA = {
     ),
     vol.Optional(ATTR_RPM_DECREASE_FUNCTION): vol.All(
         vol.Coerce(int), vol.Range(min=0, max=28)
+    ),
+    vol.Optional(ATTR_RPM_STEP_DELAY): vol.All(
+        vol.Coerce(float), vol.Range(min=0, max=10)
     ),
 }
 
@@ -407,6 +411,7 @@ def _normalize_train(data: dict[str, Any]) -> dict[str, Any]:
         ),
         ATTR_RPM_INCREASE_FUNCTION: data.get(ATTR_RPM_INCREASE_FUNCTION, 5),
         ATTR_RPM_DECREASE_FUNCTION: data.get(ATTR_RPM_DECREASE_FUNCTION, 6),
+        ATTR_RPM_STEP_DELAY: data.get(ATTR_RPM_STEP_DELAY, 1.0),
     }
     if ATTR_FUNCTIONS in data:
         train[ATTR_FUNCTIONS] = _normalize_function_map(data[ATTR_FUNCTIONS])

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.4
+
+- Adds a configurable RPM step delay so multi-step sound-state changes do not outrun sound decoders.
+- Refreshes the Track Power switch when DCC-EX reports power state from startup/status queries.
+
 ## 1.6.3
 
 - Corrects sound-state tracking so F5 from shutdown starts at idle and F6 from idle moves to shutdown.

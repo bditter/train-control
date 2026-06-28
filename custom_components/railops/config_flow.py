@@ -34,6 +34,7 @@ from .const import (
     ATTR_RPM_INCREASE_FUNCTION,
     ATTR_RPM_MAX,
     ATTR_RPM_MIN,
+    ATTR_RPM_STEP_DELAY,
     ATTR_SUBADDRESS,
     ATTR_TRAIN_ID,
     DEFAULT_PORT,
@@ -518,6 +519,9 @@ def _train_schema(train: dict[str, Any] | None = None) -> vol.Schema:
             default=train.get(ATTR_RPM_DECREASE_FUNCTION, 6),
         )
     ] = _whole_number_selector(0, 28)
+    schema[
+        vol.Optional(ATTR_RPM_STEP_DELAY, default=train.get(ATTR_RPM_STEP_DELAY, 1.0))
+    ] = vol.All(vol.Coerce(float), vol.Range(min=0, max=10))
     return vol.Schema(schema)
 
 
@@ -534,6 +538,7 @@ def _normalize_train(data: dict[str, Any]) -> dict[str, Any]:
         ),
         ATTR_RPM_INCREASE_FUNCTION: int(data.get(ATTR_RPM_INCREASE_FUNCTION, 5)),
         ATTR_RPM_DECREASE_FUNCTION: int(data.get(ATTR_RPM_DECREASE_FUNCTION, 6)),
+        ATTR_RPM_STEP_DELAY: float(data.get(ATTR_RPM_STEP_DELAY, 1.0)),
     }
     if ATTR_FUNCTIONS in data:
         train[ATTR_FUNCTIONS] = data[ATTR_FUNCTIONS]

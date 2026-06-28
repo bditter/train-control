@@ -47,6 +47,7 @@ class RailOpsPowerSwitch(RailOpsControllerEntity, SwitchEntity):
         super().__init__(entry, client)
         self._attr_unique_id = f"controller_{entry.entry_id}_track_power"
         self._attr_name = "Track Power"
+        self._unsub: Callable[[], None] | None = None
 
     @property
     def is_on(self) -> bool | None:
@@ -61,6 +62,20 @@ class RailOpsPowerSwitch(RailOpsControllerEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs) -> None:
         """Turn track power off."""
         await self._client.async_set_power(False)
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to track power updates."""
+        self._unsub = self._client.subscribe_power(self._power_updated)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Unsubscribe from track power updates."""
+        if self._unsub:
+            self._unsub()
+
+    @callback
+    def _power_updated(self, on: bool) -> None:
+        """Refresh state after DCC-EX reports track power."""
         self.async_write_ha_state()
 
 

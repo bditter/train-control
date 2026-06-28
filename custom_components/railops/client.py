@@ -33,6 +33,7 @@ DEFAULT_RPM_MIN = 0
 DEFAULT_RPM_MAX = 7
 DEFAULT_RPM_INCREASE_FUNCTION = 5
 DEFAULT_RPM_DECREASE_FUNCTION = 6
+DEFAULT_RPM_STEP_DELAY = 1.0
 LOCO_BROADCAST = re.compile(
     r"^<l\s+(?P<cab>\d+)\s+\d+\s+(?P<speed>\d+)\s+(?P<functions>\d+)>$"
 )
@@ -62,6 +63,7 @@ class TrainConfig:
     rpm_max: int
     rpm_increase_function: int
     rpm_decrease_function: int
+    rpm_step_delay: float
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "TrainConfig":
@@ -90,6 +92,9 @@ class TrainConfig:
             ),
             rpm_decrease_function=normalize_function_number(
                 data.get("rpm_decrease_function"), DEFAULT_RPM_DECREASE_FUNCTION
+            ),
+            rpm_step_delay=normalize_delay(
+                data.get("rpm_step_delay"), DEFAULT_RPM_STEP_DELAY
             ),
         )
 
@@ -170,6 +175,15 @@ def normalize_disabled_functions(functions: Any) -> set[int]:
     return disabled
 
 
+def normalize_delay(value: Any, default: float) -> float:
+    """Normalize a delay in seconds."""
+    try:
+        delay = float(value)
+    except (TypeError, ValueError):
+        return default
+    return max(0.0, min(10.0, delay))
+
+
 def normalize_function_controls(function_controls: Any) -> dict[int, str]:
     """Normalize function control type mappings."""
     normalized: dict[int, str] = {}
@@ -207,6 +221,7 @@ def normalize_function_pulse_durations(durations: Any) -> dict[int, float]:
 
 TrainUpdateCallback = Callable[[dict[str, Any]], None]
 ConnectionCallback = Callable[[bool], None]
+PowerCallback = Callable[[bool], None]
 AccessoryUpdateCallback = Callable[[str, bool], None]
 
 
@@ -251,6 +266,7 @@ class DccExClient:
         self._train_callbacks: dict[int, set[TrainUpdateCallback]] = {}
         self._accessory_callbacks: dict[str, set[AccessoryUpdateCallback]] = {}
         self._connection_callbacks: set[ConnectionCallback] = set()
+        self._power_callbacks: set[PowerCallback] = set()
         self._known_speed: dict[int, int] = {}
         self._known_forward: dict[int, bool] = {}
         self._known_functions: dict[int, dict[int, bool]] = {}
@@ -321,6 +337,16 @@ class DccExClient:
 
         return _unsubscribe
 
+    def subscribe_power(self, callback: PowerCallback) -> Callable[[], None]:
+        """Subscribe to track power state changes."""
+        self._power_callbacks.add(callback)
+        callback(self._power_on)
+
+        def _unsubscribe() -> None:
+            self._power_callbacks.discard(callback)
+
+        return _unsubscribe
+
     async def async_start_polling(self, trains: list[TrainConfig]) -> None:
         """Start polling command station and configured trains."""
         self._configured_trains = {train.address: train for train in trains}
@@ -358,8 +384,7 @@ class DccExClient:
 
     async def async_set_power(self, on: bool, track: str = "MAIN") -> None:
         """Set DCC-EX track power."""
-        self._power_on = on
-        self._mark_power_state(on)
+        self._set_power_state(on)
         await self.async_send_raw(f"<{1 if on else 0} {track}>")
 
     def get_power_state(self) -> bool:
@@ -425,6 +450,7 @@ class DccExClient:
                     train.rpm_increase_function,
                     train.function_pulse_duration(train.rpm_increase_function),
                 )
+                await self._async_sleep_sound_step(train)
         elif target < current:
             for _ in range(current - target):
                 await self.async_pulse_function(
@@ -432,6 +458,7 @@ class DccExClient:
                     train.rpm_decrease_function,
                     train.function_pulse_duration(train.rpm_decrease_function),
                 )
+                await self._async_sleep_sound_step(train)
         self._sound_levels[train.address] = target
         self._notify_train(train.address)
 
@@ -486,6 +513,11 @@ class DccExClient:
         await self.async_set_function(train, function, True)
         await asyncio.sleep(max(0.05, duration))
         await self.async_set_function(train, function, False)
+
+    async def _async_sleep_sound_step(self, train: TrainConfig) -> None:
+        """Pause between sound notch steps so decoders can catch each pulse."""
+        if train.rpm_step_delay:
+            await asyncio.sleep(train.rpm_step_delay)
 
     async def async_stop(self, train: TrainConfig) -> None:
         """Set train speed to zero."""
@@ -576,8 +608,7 @@ class DccExClient:
         match = LOCO_BROADCAST.match(message)
         if not match:
             if message.startswith("<p"):
-                self._power_on = "0" not in message[:4]
-                self._mark_power_state(self._power_on)
+                self._set_power_state("0" not in message[:4])
             elif message.startswith("<-"):
                 _LOGGER.debug("DCC-EX released locomotive: %s", message)
                 return
@@ -635,6 +666,13 @@ class DccExClient:
             self._acquired_trains.discard(address)
             self._sound_levels[address] = -1
             self._notify_train(address)
+
+    def _set_power_state(self, on: bool) -> None:
+        """Update track power state and notify listeners."""
+        self._power_on = on
+        self._mark_power_state(on)
+        for callback in list(self._power_callbacks):
+            callback(on)
 
     def _notify_train(self, address: int) -> None:
         """Notify train listeners when local state changes."""
