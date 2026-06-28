@@ -6,8 +6,10 @@ from collections.abc import Callable
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .client import AccessoryConfig, DccExClient, TrainConfig
 from .const import DATA_CLIENT, DOMAIN, OPT_ACCESSORIES, OPT_TRAINS
@@ -37,7 +39,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class RailOpsPowerSwitch(RailOpsControllerEntity, SwitchEntity):
+class RailOpsPowerSwitch(RailOpsControllerEntity, SwitchEntity, RestoreEntity):
     """Track power switch."""
 
     _attr_icon = "mdi:power"
@@ -66,6 +68,13 @@ class RailOpsPowerSwitch(RailOpsControllerEntity, SwitchEntity):
 
     async def async_added_to_hass(self) -> None:
         """Subscribe to track power updates."""
+        last_state = await self.async_get_last_state()
+        if (
+            self._client.get_power_state() is None
+            and last_state
+            and last_state.state in {STATE_ON, STATE_OFF}
+        ):
+            self._client.restore_power_state(last_state.state == STATE_ON)
         self._unsub = self._client.subscribe_power(self._power_updated)
 
     async def async_will_remove_from_hass(self) -> None:
@@ -74,7 +83,7 @@ class RailOpsPowerSwitch(RailOpsControllerEntity, SwitchEntity):
             self._unsub()
 
     @callback
-    def _power_updated(self, on: bool) -> None:
+    def _power_updated(self, on: bool | None) -> None:
         """Refresh state after DCC-EX reports track power."""
         self.async_write_ha_state()
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.5
+
+- Restores Track Power state after Home Assistant reloads RailOps instead of defaulting to off.
+- Parses DCC-EX power broadcasts with explicit `<p0>`, `<p1>`, `<p off>`, and `<p on>` handling.
+
 ## 1.6.4
 
 - Adds a configurable RPM step delay so multi-step sound-state changes do not outrun sound decoders.

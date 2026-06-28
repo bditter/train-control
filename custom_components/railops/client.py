@@ -37,6 +37,9 @@ DEFAULT_RPM_STEP_DELAY = 1.0
 LOCO_BROADCAST = re.compile(
     r"^<l\s+(?P<cab>\d+)\s+\d+\s+(?P<speed>\d+)\s+(?P<functions>\d+)>$"
 )
+POWER_BROADCAST = re.compile(
+    r"^<p\s*(?P<state>1|0|on|off)\b.*>$", re.IGNORECASE
+)
 
 
 class DccExConnectionError(Exception):
@@ -221,7 +224,7 @@ def normalize_function_pulse_durations(durations: Any) -> dict[int, float]:
 
 TrainUpdateCallback = Callable[[dict[str, Any]], None]
 ConnectionCallback = Callable[[bool], None]
-PowerCallback = Callable[[bool], None]
+PowerCallback = Callable[[bool | None], None]
 AccessoryUpdateCallback = Callable[[str, bool], None]
 
 
@@ -274,7 +277,7 @@ class DccExClient:
         self._sound_levels: dict[int, int] = {}
         self._accessory_states: dict[str, bool] = {}
         self._acquired_trains: set[int] = set()
-        self._power_on = False
+        self._power_on: bool | None = None
         self.connected = False
 
     @property
@@ -387,9 +390,14 @@ class DccExClient:
         self._set_power_state(on)
         await self.async_send_raw(f"<{1 if on else 0} {track}>")
 
-    def get_power_state(self) -> bool:
+    def get_power_state(self) -> bool | None:
         """Return the last commanded power state."""
         return self._power_on
+
+    def restore_power_state(self, on: bool) -> None:
+        """Restore the last Home Assistant power state without commanding DCC-EX."""
+        if self._power_on is None:
+            self._set_power_state(on)
 
     def get_speed(self, address: int) -> int:
         """Return the last known speed for an address."""
@@ -607,8 +615,10 @@ class DccExClient:
         """Handle one DCC-EX response message."""
         match = LOCO_BROADCAST.match(message)
         if not match:
-            if message.startswith("<p"):
-                self._set_power_state("0" not in message[:4])
+            power_match = POWER_BROADCAST.match(message)
+            if power_match:
+                state = power_match.group("state").lower()
+                self._set_power_state(state in {"1", "on"})
             elif message.startswith("<-"):
                 _LOGGER.debug("DCC-EX released locomotive: %s", message)
                 return
@@ -667,10 +677,11 @@ class DccExClient:
             self._sound_levels[address] = -1
             self._notify_train(address)
 
-    def _set_power_state(self, on: bool) -> None:
+    def _set_power_state(self, on: bool | None) -> None:
         """Update track power state and notify listeners."""
         self._power_on = on
-        self._mark_power_state(on)
+        if on is not None:
+            self._mark_power_state(on)
         for callback in list(self._power_callbacks):
             callback(on)
 
