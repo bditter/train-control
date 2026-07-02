@@ -730,7 +730,12 @@ class DccExClient:
         if track in {TRACK_MAIN, TRACK_PROG}:
             main = self._power_on[TRACK_MAIN]
             prog = self._power_on[TRACK_PROG]
-            self._power_on[TRACK_ALL] = main if main == prog else None
+            if main is True and prog is True:
+                self._power_on[TRACK_ALL] = True
+            elif main is False or prog is False:
+                self._power_on[TRACK_ALL] = False
+            else:
+                self._power_on[TRACK_ALL] = None
             tracks.append(TRACK_ALL)
         if on is not None and track in {TRACK_MAIN, TRACK_ALL}:
             self._mark_power_state(on)

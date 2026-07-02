@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.10
+
+- Fixes All Track Power aggregation so it is on only when Main and Programming are both on, and off when either track is off.
+
 ## 1.6.9
 
 - Reorders bulk F-key setup so each F key starts with its enabled checkbox, followed by name, control type, and pulse duration.
